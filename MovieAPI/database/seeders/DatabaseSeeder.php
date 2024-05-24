@@ -21,7 +21,6 @@ class DatabaseSeeder extends Seeder
         User::factory(10)->create();
         Movie::factory(10)->create();
         Rating::factory(10)->create();
-        Views::factory(10)->create();
         Theater::factory(10)->create();
         MovieRoom::factory(10)->create();
 
