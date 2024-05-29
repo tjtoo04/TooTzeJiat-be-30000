@@ -21,6 +21,7 @@ class Movie extends Model
         'director',
         'performer',
         'language',
-        'description'
+        'description',
+        'view_count'
     ];
 }

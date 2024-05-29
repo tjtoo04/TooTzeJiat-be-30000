@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('release');
             $table->string('title');
             $table->string('genre');
-            $table->string('poster');
+            $table->string('poster')->nullable();
             $table->integer('durationMinutes');
             $table->integer('view_count');
             $table->enum('mpaa_rating', ['G', 'PG', 'PG-13', 'R', 'NC-17', 'X', 'GP', 'M', 'M/PG']);
