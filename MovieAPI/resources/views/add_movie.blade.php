@@ -10,7 +10,7 @@
 <title>Add Movie</title>
 <body>
     <div class="flex justify-evenly items-center h-screen w-full border border-black">
-        <form action="/add_movie" method="POST">
+        <form action="/create_movie" method="POST">
         @csrf
             <div class="p-4 border shadow-sm h-fit w-fit">
                 <label for="title">Title:</label>

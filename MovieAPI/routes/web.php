@@ -8,4 +8,4 @@ Route::get('/', function () {
 });
 
 Route::get('create_movie', [MovieController::class, 'index'])->name('create_movie');
-Route::post('add_movie', [MovieController::class, 'create_movie']);
+Route::post('create_movie', [MovieController::class, 'create_movie']);
