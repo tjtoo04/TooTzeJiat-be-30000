@@ -39,22 +39,49 @@ class MovieController extends Controller
     }
 
     public function genres(Request $request) {
-        $available_genres = ['action', 'comedy', 'horror', 'adventure'];
-
+        //$available_genres = ['action', 'comedy', 'horror', 'adventure'];
+        
         $genre = strip_tags($request->query('genre'));
+        $available_genres = DB::table('movies')->select('genre', 'movie_ID')->get();
+        $data = [];
+        $wantedGenresMovieID = [];
 
-        if ($genre !== '' && in_array($genre, $available_genres, true)){
+        foreach ($available_genres as $key => $value) {
+            $value->genre = explode(',', $value->genre);
+            array_push($data, $value);
+        }
+
+        foreach ($data as $key => $value) {
+            if (in_array($genre, $value->genre, true)){
+                array_push($wantedGenresMovieID, $value->movie_ID);
+            }
+        }
+
+        if ($genre !== ''){
             $ratingsSub = DB::table('ratings')
-                ->select(DB::raw('AVG(ratings.rating) AS rating'), 'ratings.movie_ID')
-                ->groupBy('movie_ID');
-    
+            ->select(DB::raw('AVG(ratings.rating) AS rating'), 'ratings.movie_ID')
+            ->whereIn('ratings.movie_ID', $wantedGenresMovieID)
+            ->groupBy('movie_ID');
+
             $movies = DB::table('movies')
                 ->joinSub($ratingsSub, 'ratings', function (JoinClause $join){
                     $join->on('movies.movie_ID','=', 'ratings.movie_ID');
                 })
                 ->select('movies.movie_ID', 'movies.title', 'movies.genre', DB::raw('(SEC_TO_TIME(movies.durationMinutes * 60)) AS duration'), 'movies.view_count', 'movies.poster', 'ratings.rating', 'movies.description')
-                ->where('movies.genre', '=', $genre)
+                ->whereIn('movies.movie_ID', $wantedGenresMovieID)
                 ->get();
+    
+            $moviesNoRatings = DB::table('movies')
+                ->select('movies.movie_ID', 'movies.title', 'movies.genre', DB::raw('(SEC_TO_TIME(movies.durationMinutes * 60)) AS duration'), 'movies.view_count', 'movies.poster', 'movies.description')
+                ->whereIn('movies.movie_ID', $wantedGenresMovieID)
+                ->get();
+
+            foreach ($moviesNoRatings as $key => $value) {
+                if (!in_array($value->movie_ID, $movies->pluck('movie_ID')->toArray())){
+                    $movies->push($value);
+
+                }
+            }
     
             if (!$movies->isEmpty()){
                 return response()->json($movies);
@@ -62,7 +89,9 @@ class MovieController extends Controller
             }else {
                 return response()->json(['Data not found'], 400);
             }
-        }else {
+            
+        }
+        else {
             return response()->json(['Invalid parameters'], 400);
         }
 
@@ -208,13 +237,13 @@ class MovieController extends Controller
             array_push($wantedPerformerMovieID, $value[1]);
         }
         
-        $ratingsSub = DB::table('ratings')
-            ->select(DB::raw('AVG(ratings.rating) AS rating'), 'ratings.movie_ID')
-            ->whereIn('movie_ID', $wantedPerformerMovieID)
-            ->groupBy('movie_ID')
-            ->get();
+        
+        if ($performer != ''){
+            $ratingsSub = DB::table('ratings')
+                ->select(DB::raw('AVG(ratings.rating) AS rating'), 'ratings.movie_ID')
+                ->whereIn('movie_ID', $wantedPerformerMovieID)
+                ->groupBy('movie_ID');
 
-        if ($performer != '' && !$ratingsSub->isEmpty()){
             $movies = DB::table('movies')
                 ->joinSub($ratingsSub, 'ratings', function (JoinClause $join){
                     $join->on('movies.movie_ID','=', 'ratings.movie_ID');
@@ -223,6 +252,16 @@ class MovieController extends Controller
                 ->select('movies.movie_ID', 'movies.title', 'movies.genre', DB::raw('(SEC_TO_TIME(movies.durationMinutes * 60)) AS duration'), 'movies.view_count', 'movies.poster', 'movies.description')
                 ->get();
     
+            $moviesNoRatings = DB::table('movies')
+                ->whereIn('movies.movie_ID', $wantedPerformerMovieID)
+                ->select('movies.movie_ID', 'movies.title', 'movies.genre', DB::raw('(SEC_TO_TIME(movies.durationMinutes * 60)) AS duration'), 'movies.view_count', 'movies.poster', 'movies.description')
+                ->get();
+
+            foreach ($moviesNoRatings as $key => $value) {
+                if(!in_array($value->movie_ID, $movies->pluck('movie_ID')->toArray()))
+                $movies->push($value);
+            }
+
             if (!$movies->isEmpty()){
                 return response()->json($movies);
 
@@ -230,19 +269,10 @@ class MovieController extends Controller
                 return response()->json(['Data not found'], 400);
             }
 
-        }else if ($performer != '' && $ratingsSub->isEmpty()){
-                $movies = DB::table('movies')
-                    ->whereIn('movies.movie_ID', $wantedPerformerMovieID)
-                    ->select('movies.movie_ID', 'movies.title', 'movies.genre', DB::raw('(SEC_TO_TIME(movies.durationMinutes * 60)) AS duration'), 'movies.view_count', 'movies.poster', 'movies.description')
-                    ->get();
+        }
         
-                if (!$movies->isEmpty()){
-                    return response()->json($movies);
-    
-                }else {
-                    return response()->json(['Data not found'], 400);
-                }
-            }  else {
+
+        else {
             return response()->json(['Invalid parameters'], 400);
             }
     }
